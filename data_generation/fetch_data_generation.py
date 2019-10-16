@@ -2,17 +2,17 @@ import gym
 import time
 import random
 import numpy as np
-import rospy
-import roslaunch
+# import rospy
+# import roslaunch
 
-from random import randint
-from std_srvs.srv import Empty
-from sensor_msgs.msg import JointState
-from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Pose
-from std_msgs.msg import Float64
-from controller_manager_msgs.srv import SwitchController
-from gym.utils import seeding
+# from random import randint
+# from std_srvs.srv import Empty
+# from sensor_msgs.msg import JointState
+# from geometry_msgs.msg import PoseStamped
+# from geometry_msgs.msg import Pose
+# from std_msgs.msg import Float64
+# from controller_manager_msgs.srv import SwitchController
+# from gym.utils import seeding
 
 
 """Data generation for the case of a single block with Fetch Arm pick and place"""
@@ -24,7 +24,7 @@ rewards = []
 infos = []
 
 def main():
-    env = gym.make('FetchPickAndPlace-v0')
+    env = gym.make('FetchPickAndPlace-v1')
     numItr = 100
     initStateSpace = "random"
 
