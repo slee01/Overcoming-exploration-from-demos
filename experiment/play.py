@@ -67,7 +67,20 @@ def main(policy_file, seed, n_test_rollouts, render):
     # Run evaluation.
     evaluator.clear_history()
     for _ in range(n_test_rollouts):
-        evaluator.generate_rollouts()
+        eps = evaluator.generate_rollouts()
+        print("eps.keys(): ", list(eps.keys()))
+        print("eps.o: ", eps["o"].shape)
+        print("eps.u: ", eps["u"].shape)
+        print("eps.g: ", eps["g"].shape)
+        print("eps.ag: ", eps["ag"].shape)
+        print("eps.success: ", eps["info_is_success"].shape)
+
+        print("eps.o[0]: ", eps["o"][0,0,:])
+        print("eps.o[1]: ", eps["o"][0,1,:])
+        print("eps.g[0]: ", eps["g"][0,0,:])
+        print("eps.g[1]: ", eps["g"][0,1,:])
+        print("eps.ag[0]: ", eps["ag"][0, 0, :])
+        print("eps.ag[1]: ", eps["ag"][0, 1, :])
 
     # record logs
     for key, val in evaluator.logs('test'):
