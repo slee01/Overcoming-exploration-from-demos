@@ -160,10 +160,11 @@ class DDPG(object):
             obs, acts, goals, achieved_goals = [], [] ,[] ,[]
             i = 0
             for transition in range(self.T):
-                obs.append([demoData['obs'][epsd ][transition].get('observation')])
+                obs.append([demoData['obs'][epsd][transition].get('observation')])
                 acts.append([demoData['acs'][epsd][transition]])
                 goals.append([demoData['obs'][epsd][transition].get('desired_goal')])
                 achieved_goals.append([demoData['obs'][epsd][transition].get('achieved_goal')])
+
                 for idx, key in enumerate(info_keys):
                     info_values[idx][transition, i] = demoData['info'][epsd][transition][key]
 
@@ -177,7 +178,9 @@ class DDPG(object):
             for key, value in zip(info_keys, info_values):
                 episode['info_{}'.format(key)] = value
 
-            episode = convert_episode_to_batch_major(episode)
+            # converts an episode to have the batch dimension in the major(first) dimension
+            # make inputs batch-major instead of time-major through np.swapaxes(0, 1)
+            episode = convert_episode_to_batch_major(episode) # baselines.her.utils
             global demoBuffer
             demoBuffer.store_episode(episode)
 

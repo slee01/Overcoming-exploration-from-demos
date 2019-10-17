@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-import gym_gazebo
+# import gym_gazebo
 
 import sys
 sys.path.append('/home/rjangir/software/workSpace/Overcoming-exploration-from-demos/')

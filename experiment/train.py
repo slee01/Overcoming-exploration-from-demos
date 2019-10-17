@@ -224,9 +224,9 @@ def launch(
 
 
 @click.command()
-#@click.option('--env', type=str, default='FetchPickAndPlace-v0', help='the name of the OpenAI Gym environment that you want to train on')
+@click.option('--env', type=str, default='FetchPickAndPlace-v1', help='the name of the OpenAI Gym environment that you want to train on')
 #@click.option('--env', type=str, default='GazeboWAMemptyEnv-v2', help='the name of the OpenAI Gym environment that you want to train on')
-@click.option('--env', type=str, default='GazeboWAMemptyEnv-v1', help='the name of the OpenAI Gym environment that you want to train on')
+# @click.option('--env', type=str, default='GazeboWAMemptyEnv-v1', help='the name of the OpenAI Gym environment that you want to train on')
 @click.option('--logdir', type=str, default=None, help='the path to where logs and policy pickles should go. If not specified, creates a folder in /tmp/')
 @click.option('--n_epochs', type=int, default=1000, help='the number of training epochs to run')
 @click.option('--num_cpu', type=int, default=1, help='the number of CPU cores to use (using MPI)')
@@ -234,7 +234,7 @@ def launch(
 @click.option('--policy_save_interval', type=int, default=5, help='the interval with which policy pickles are saved. If set to 0, only the best and latest policy will be pickled.')
 @click.option('--replay_strategy', type=click.Choice(['future', 'none']), default='future', help='the HER replay strategy to be used. "future" uses HER, "none" disables HER.')
 @click.option('--clip_return', type=int, default=1, help='whether or not returns should be clipped')
-@click.option('--demo_file', type=str, default = '/home/rjangir/wamdata/data_wam_reach_random_100_30_18.npz', help='demo data file path')
+@click.option('--demo_file', type=str, default='/home/slee01/PycharmProjects/Overcoming-exploration-from-demos/data_generation/data_fetch_random_100.npz', help='demo data file path')
 def main(**kwargs):
     launch(**kwargs)
 
