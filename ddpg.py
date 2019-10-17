@@ -124,7 +124,8 @@ class DDPG(object):
         # values to compute
         vals = [policy.pi_tf]
         if compute_Q:
-            vals += [policy.Q_pi_tf]
+            vals += [policy.Q_pi_tf]  # vals = [policy.pi_tf, policy.Q_pi_tf]
+
         # feed
         feed = {
             policy.o_tf: o.reshape(-1, self.dimo),
@@ -191,6 +192,7 @@ class DDPG(object):
                 episode['o_2'] = episode['o'][:, 1:, :]
                 episode['ag_2'] = episode['ag'][:, 1:, :]
                 num_normalizing_transitions = transitions_in_episode_batch(episode)
+                # function that samples from the replay buffer
                 transitions = self.sample_transitions(episode, num_normalizing_transitions)
 
                 o, o_2, g, ag = transitions['o'], transitions['o_2'], transitions['g'], transitions['ag']

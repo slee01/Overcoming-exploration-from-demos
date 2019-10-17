@@ -40,15 +40,18 @@ def train(policy, rollout_worker, evaluator,
     best_success_rate = -1
     best_success_epoch = 0
 
-    if policy.bc_loss == 1: policy.initDemoBuffer(demo_file) #initializwe demo buffer
+    if policy.bc_loss == 1: policy.initDemoBuffer(demo_file) # initializwe demo buffer
+
     for epoch in range(n_epochs):
         # train
-        rollout_worker.clear_history()
+        rollout_worker.clear_history()  # Clears all histories that are used for statistics
         for _ in range(n_cycles):
             episode = rollout_worker.generate_rollouts()
             policy.store_episode(episode)
+
             for _ in range(n_batches):
                 policy.train()
+
             policy.update_target_net()
 
         # test
@@ -131,6 +134,7 @@ def launch(
     params = config.DEFAULT_PARAMS
     params['env_name'] = env
     params['replay_strategy'] = replay_strategy
+
     if env in config.DEFAULT_ENV_PARAMS:
         params.update(config.DEFAULT_ENV_PARAMS[env])  # merge env-specific parameters in
     params.update(**override_params)  # makes it possible to override any parameter
