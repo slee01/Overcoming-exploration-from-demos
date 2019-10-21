@@ -1,5 +1,8 @@
 import click
+import os
 import numpy as np
+import h5py
+import torch
 import pickle
 import sys
 
@@ -65,28 +68,76 @@ def main(policy_file, seed, n_test_rollouts, render):
         evaluator.seed(seed)
 
     # Run evaluation.
+    states, actions, rewards, lens = [], [], [], []
+    success = 0
     evaluator.clear_history()
-    for _ in range(n_test_rollouts):
+    for i in range(n_test_rollouts * 10):
         eps = evaluator.generate_rollouts()
-        print("eps.keys(): ", list(eps.keys()))
-        print("eps.o: ", eps["o"].shape)
-        print("eps.u: ", eps["u"].shape)
-        print("eps.g: ", eps["g"].shape)
-        print("eps.ag: ", eps["ag"].shape)
-        print("eps.success: ", eps["info_is_success"].shape)
+        # eps.keys(): ['o', 'u', 'g', 'ag', 'info_is_success']
+        # eps.o: (1, 51, 25)
+        # eps.u: (1, 50, 4)
+        # eps.g: (1, 50, 3)
+        # eps.ag: (1, 51, 3)
+        # eps.success: (1, 50, 1)
 
-        print("eps.o[0]: ", eps["o"][0,0,:])
-        print("eps.o[1]: ", eps["o"][0,1,:])
-        print("eps.g[0]: ", eps["g"][0,0,:])
-        print("eps.g[1]: ", eps["g"][0,1,:])
-        print("eps.ag[0]: ", eps["ag"][0, 0, :])
-        print("eps.ag[1]: ", eps["ag"][0, 1, :])
+        if np.sum(eps["info_is_success"]) < 20.0:
+            continue
+        else:
+            success = success + 1
 
+        states.append(np.concatenate((eps["o"][:, :-1, :], eps["g"]), axis=2))
+        actions.append(eps["u"])
+        rewards.append(eps["info_is_success"])
+        lens.append(eps["info_is_success"].shape[1])
+
+        print("episode: ", i, " length: ", eps["info_is_success"].shape[1],
+              " returns: ", np.sum(eps["info_is_success"]), " success: ", success)
+
+        if success >= n_test_rollouts:
+            break
+
+    states, actions, rewards, lens = np.array(states), np.array(actions), np.array(rewards), np.array(lens)
+    states, actions, rewards = np.squeeze(states, axis=1), np.squeeze(actions, axis=1), np.squeeze(rewards, axis=1)
+
+    assert len(states) == len(actions), 'len(states) != len(actions)'
+    assert len(states) == len(rewards), 'len(states) != len(rewards)'
+    assert len(states) == len(lens), 'len(states) != len(lens)'
+
+    print("=================================================================")
     # record logs
     for key, val in evaluator.logs('test'):
         logger.record_tabular(key, np.mean(val))
     logger.dump_tabular()
 
+    if torch.cuda.is_available():
+        save_dir = '/home/slee01/PycharmProjects/pytorch-a2c-ppo-acktr-gail/gail_experts/'
+    else:
+        save_dir = '/Users/slee01/PycharmProjects/pytorch-a2c-ppo-acktr-gail/gail_experts/'
+
+    save_path = os.path.join(
+        save_dir,
+        "trajs_{}_{}.h5".format(params['env_name'].split('-')[0].lower(), "her"))
+
+    h5f = h5py.File(save_path, 'w')
+
+    h5f.create_dataset('obs_B_T_Do', data=states)
+    h5f.create_dataset('a_B_T_Da', data=actions)
+    h5f.create_dataset('r_B_T', data=rewards)
+    h5f.create_dataset('len_B', data=lens)
+
+    key_list = list(h5f.keys())
+
+    h5f.close()
+
+    print("env_name: ", params['env_name'])
+    print("saved file keys: ", key_list)
+    print("saved file name: ", save_path)
+
+    print("expert_states: ", states.shape)
+    print("expert_actions: ", actions.shape)
+    print("expert_rewards: ", rewards.shape)
+    print("expert_lens: ", lens.shape)
+    print("=================================================================")
 
 if __name__ == '__main__':
     main()
