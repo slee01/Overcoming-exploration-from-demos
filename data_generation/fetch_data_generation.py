@@ -257,6 +257,7 @@ def goToGoal(env, lastObs):
     if timeStep <= env._max_episode_steps:
         actions.append(episodeAcs)
         observations.append(episodeObs)
+        rewards.append(episodeRes)
         infos.append(episodeInfo)
         lens.append(timeStep)
     print("Update Result: len(lens) is ", len(lens))
