@@ -23,9 +23,9 @@ import torch
 """Data generation for the case of a single block with Fetch Arm pick and place"""
 
 ep_returns = []
-states, episode_states = [], []
-actions, episode_actions = [], []
-rewards, episode_rewards = [], []
+observations = []
+actions = []
+rewards = []
 lens = []
 infos = []
 
@@ -76,10 +76,10 @@ def main():
     # fileName += "_" + initStateSpace
     # fileName += "_" + str(numItr)
     # fileName += ".npz"
-    # np.savez_compressed(fileName, acs=actions, obs=states, info=infos)
+    # np.savez_compressed(fileName, acs=actions, obs=observations, info=infos)
 
     data = {
-        'states': states,
+        'states': observations,
         'actions': actions,
         'rewards': rewards,
         'lengths': lens
@@ -98,6 +98,7 @@ def goToGoal(env, lastObs):
     gripperPos = lastObs['observation'][:3]
     gripperState = lastObs['observation'][9:11]
     object_rel_pos = lastObs['observation'][6:9]
+    goal_rel_pose = lastObs['desired_goal'] - lastObs['achieved_goal']
 
     #print("relative position ", object_rel_pos)
     #print("Goal position ", goal)
@@ -107,6 +108,7 @@ def goToGoal(env, lastObs):
 
     episodeAcs = []
     episodeObs = []
+    episodeRes = []
     episodeInfo = []
 
     object_oriented_goal = object_rel_pos.copy()
@@ -116,7 +118,7 @@ def goToGoal(env, lastObs):
 
     timeStep = 0
 
-    episodeObs.append(lastObs)
+    episodeObs.append(np.concatenate((lastObs, goal_rel_pose), axis=-1))
 
     
 
@@ -133,11 +135,14 @@ def goToGoal(env, lastObs):
         action[len(action)-1] = 0.05
 
         obsDataNew, reward, done, info = env.step(action)
+        goal_rel_pose = obsDataNew['desired_goal'] - obsDataNew['achieved_goal']
         timeStep += 1
 
         episodeAcs.append(action)
         episodeInfo.append(info)
-        episodeObs.append(obsDataNew)
+        episodeRes.append(reward)
+        # episodeObs.append(obsDataNew)
+        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -156,11 +161,14 @@ def goToGoal(env, lastObs):
         action[len(action)-1] = -0.005
 
         obsDataNew, reward, done, info = env.step(action)
+        goal_rel_pose = obsDataNew['desired_goal'] - obsDataNew['achieved_goal']
         timeStep += 1
 
         episodeAcs.append(action)
         episodeInfo.append(info)
-        episodeObs.append(obsDataNew)
+        episodeRes.append(reward)
+        # episodeObs.append(obsDataNew)
+        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -180,11 +188,14 @@ def goToGoal(env, lastObs):
         action[len(action)-1] = -0.005
 
         obsDataNew, reward, done, info = env.step(action)
+        goal_rel_pose = obsDataNew['desired_goal'] - obsDataNew['achieved_goal']
         timeStep += 1
 
         episodeAcs.append(action)
         episodeInfo.append(info)
-        episodeObs.append(obsDataNew)
+        episodeRes.append(reward)
+        # episodeObs.append(obsDataNew)
+        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -199,12 +210,14 @@ def goToGoal(env, lastObs):
         action[len(action)-1] = -0.005
 
         obsDataNew, reward, done, info = env.step(action)
+        goal_rel_pose = obsDataNew['desired_goal'] - obsDataNew['achieved_goal']
         timeStep += 1
 
         episodeAcs.append(action)
         episodeInfo.append(info)
-        episodeObs.append(obsDataNew)
-
+        episodeRes.append(reward)
+        # episodeObs.append(obsDataNew)
+        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -213,13 +226,17 @@ def goToGoal(env, lastObs):
 
         if timeStep >= env._max_episode_steps: break
 
-    #print("Toatal timesteps taken ", timeStep)
+    print("Toatal timesteps taken ", timeStep)
+    print("len(episodeObs): ", len(episodeObs))
+    print("len(episodeAcs): ", len(episodeAcs))
+    print("len(episodeRes): ", len(episodeRes))
 
     actions.append(episodeAcs)
-    states.append(episodeObs)
+    observations.append(episodeObs)
     infos.append(episodeInfo)
+    lens.append(env._max_episode_steps)
+    print("Update Result: len(lens) is ", len(lens))
 
-    
 
 if __name__ == "__main__":
     main()
