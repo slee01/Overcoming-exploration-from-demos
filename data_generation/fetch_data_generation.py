@@ -2,6 +2,10 @@ import gym
 import time
 import random
 import numpy as np
+
+import os
+import argparse
+
 # import rospy
 # import roslaunch
 
@@ -18,12 +22,36 @@ import numpy as np
 """Data generation for the case of a single block with Fetch Arm pick and place"""
 
 ep_returns = []
-actions = []
-observations = []
-rewards = []
+states, episode_states = [], []
+actions, episode_actions = [], []
+rewards, episode_rewards = [], []
+lens = []
 infos = []
 
 def main():
+    parser = argparse.ArgumentParser(
+        'Get expert trajectories on FetchPickAndPlace-v1 with pt format.')
+    parser.add_argument(
+        '--pt-file',
+        default='trajs_fetchpickandplace_heuristics.pt',
+        help='output pt file to save demonstrations',
+        type=str)
+    parser.add_argument(
+        '--render',
+        action='store_true',
+        default=False,
+        help='render simulator')
+    parser.add_argument(
+        '--save-episode',
+        type=int,
+        default=3000,
+        help='the number of episodes to save demonstrations (default: 100)')
+
+    args = parser.parse_args()
+
+    # if args.pt_file is None:
+    #     args.pt_file = os.path.splitext(args.h5_file)[0] + '.pt'
+
     env = gym.make('FetchPickAndPlace-v1')
     numItr = 100
     initStateSpace = "random"
@@ -32,10 +60,12 @@ def main():
     print("Reset!")
     time.sleep(1)
 
-
     while len(actions) < numItr:
         obs = env.reset()
-        #env.render()
+
+        if args.render:
+            env.render()
+
         print("Reset!")
         print("ITERATION NUMBER ", len(actions))
         goToGoal(env, obs)
@@ -49,7 +79,7 @@ def main():
 
     fileName += ".npz"
     
-    np.savez_compressed(fileName, acs=actions, obs=observations, info=infos)
+    np.savez_compressed(fileName, acs=actions, obs=states, info=infos)
 
 
 
@@ -182,7 +212,7 @@ def goToGoal(env, lastObs):
     #print("Toatal timesteps taken ", timeStep)
 
     actions.append(episodeAcs)
-    observations.append(episodeObs)
+    states.append(episodeObs)
     infos.append(episodeInfo)
 
     
