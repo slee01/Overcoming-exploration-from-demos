@@ -87,12 +87,11 @@ def main():
     # fileName += ".npz"
     # np.savez_compressed(fileName, acs=actions, obs=observations, info=infos)
 
-    print("")
     data = {
-        'states': np.array(observations),
-        'actions': np.array(actions),
-        'rewards': np.array(rewards),
-        'lengths': np.array(lens)
+        'states': torch.FloatTensor(np.array(observations)),
+        'actions': torch.FloatTensor(np.array(actions)),
+        'rewards': torch.FloatTensor(np.array(rewards)),
+        'lengths': torch.FloatTensor(np.array(lens))
     }
 
     torch.save(data, args.pt_file)
