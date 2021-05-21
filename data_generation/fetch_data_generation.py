@@ -19,6 +19,30 @@ import torch
 # from controller_manager_msgs.srv import SwitchController
 # from gym.utils import seeding
 
+parser = argparse.ArgumentParser(
+    'Get expert trajectories on FetchPickAndPlace-v1 with pt format.')
+parser.add_argument(
+    '--pt-file',
+    default='trajs_fetchpickandplace_heuristics.pt',
+    help='output pt file to save demonstrations',
+    type=str)
+parser.add_argument(
+    '--render',
+    action='store_true',
+    default=False,
+    help='render simulator')
+parser.add_argument(
+    '--drop-last-obs',
+    action='store_true',
+    default=False,
+    help='drop the last observation for each episode')
+parser.add_argument(
+    '--save-episode',
+    type=int,
+    default=3000,
+    help='the number of episodes to save demonstrations (default: 100)')
+
+args = parser.parse_args()
 
 """Data generation for the case of a single block with Fetch Arm pick and place"""
 
@@ -29,27 +53,8 @@ rewards = []
 lens = []
 infos = []
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        'Get expert trajectories on FetchPickAndPlace-v1 with pt format.')
-    parser.add_argument(
-        '--pt-file',
-        default='trajs_fetchpickandplace_heuristics.pt',
-        help='output pt file to save demonstrations',
-        type=str)
-    parser.add_argument(
-        '--render',
-        action='store_true',
-        default=False,
-        help='render simulator')
-    parser.add_argument(
-        '--save-episode',
-        type=int,
-        default=3000,
-        help='the number of episodes to save demonstrations (default: 100)')
-
-    args = parser.parse_args()
-
     # if args.pt_file is None:
     #     args.pt_file = os.path.splitext(args.h5_file)[0] + '.pt'
 
@@ -61,7 +66,8 @@ def main():
     print("Reset!")
     time.sleep(1)
 
-    while len(actions) < numItr:
+    # while len(actions) < numItr:
+    for i in range(args.save_episode + 1000):
         obs = env.reset()
 
         if args.render:
@@ -70,6 +76,9 @@ def main():
         print("Reset!")
         print("ITERATION NUMBER ", len(actions))
         goToGoal(env, obs)
+
+        if len(actions) >= args.save_episode:
+            break
         
 
     # fileName = "data_fetch"
@@ -78,11 +87,12 @@ def main():
     # fileName += ".npz"
     # np.savez_compressed(fileName, acs=actions, obs=observations, info=infos)
 
+    print("")
     data = {
-        'states': observations,
-        'actions': actions,
-        'rewards': rewards,
-        'lengths': lens
+        'states': np.array(observations),
+        'actions': np.array(actions),
+        'rewards': np.array(rewards),
+        'lengths': np.array(lens)
     }
 
     torch.save(data, args.pt_file)
@@ -106,6 +116,11 @@ def goToGoal(env, lastObs):
     #print("Object Position ", objectPos)
     #print("Gripper state  ", gripperState)
 
+    # print("observation: ", lastObs['observation'].shape)
+    # print("goal: ", goal.shape)
+    # print("relative Goal Position: ", goal_rel_pose.shape)
+
+
     episodeAcs = []
     episodeObs = []
     episodeRes = []
@@ -118,12 +133,15 @@ def goToGoal(env, lastObs):
 
     timeStep = 0
 
-    episodeObs.append(np.concatenate((lastObs, goal_rel_pose), axis=-1))
+    # _obs = np.concatenate((lastObs['observation'], goal_rel_pose), axis=-1)
+    # print("final obs: ", _obs.shape)
+    episodeObs.append(np.concatenate((lastObs['observation'], goal_rel_pose), axis=-1))
 
     
 
     while np.linalg.norm(object_oriented_goal) >= 0.005 and timeStep <= env._max_episode_steps:
-        env.render()
+        if args.render:
+            env.render()
         action = [0, 0, 0, 0]
 
         object_oriented_goal = object_rel_pos.copy()
@@ -142,7 +160,7 @@ def goToGoal(env, lastObs):
         episodeInfo.append(info)
         episodeRes.append(reward)
         # episodeObs.append(obsDataNew)
-        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
+        episodeObs.append(np.concatenate((obsDataNew['observation'], goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -150,7 +168,8 @@ def goToGoal(env, lastObs):
         object_rel_pos = obsDataNew['observation'][6:9]
 
     while np.linalg.norm(object_rel_pos) >= 0.005 and timeStep <= env._max_episode_steps :
-        env.render()
+        if args.render:
+            env.render()
         action = [0, 0, 0, 0]
 
         
@@ -168,7 +187,7 @@ def goToGoal(env, lastObs):
         episodeInfo.append(info)
         episodeRes.append(reward)
         # episodeObs.append(obsDataNew)
-        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
+        episodeObs.append(np.concatenate((obsDataNew['observation'], goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -177,7 +196,8 @@ def goToGoal(env, lastObs):
 
 
     while np.linalg.norm(goal - objectPos) >= 0.01 and timeStep <= env._max_episode_steps :
-        env.render()
+        if args.render:
+            env.render()
         action = [0, 0, 0, 0]
 
         
@@ -195,7 +215,7 @@ def goToGoal(env, lastObs):
         episodeInfo.append(info)
         episodeRes.append(reward)
         # episodeObs.append(obsDataNew)
-        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
+        episodeObs.append(np.concatenate((obsDataNew['observation'], goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -204,7 +224,8 @@ def goToGoal(env, lastObs):
 
 
     while True:
-        env.render()
+        if args.render:
+            env.render()
         action = [0, 0, 0, 0]
 
         action[len(action)-1] = -0.005
@@ -217,7 +238,7 @@ def goToGoal(env, lastObs):
         episodeInfo.append(info)
         episodeRes.append(reward)
         # episodeObs.append(obsDataNew)
-        episodeObs.append(np.concatenate((obsDataNew, goal_rel_pose), axis=-1))
+        episodeObs.append(np.concatenate((obsDataNew['observation'], goal_rel_pose), axis=-1))
 
         objectPos = obsDataNew['observation'][3:6]
         gripperPos = obsDataNew['observation'][:3]
@@ -226,15 +247,19 @@ def goToGoal(env, lastObs):
 
         if timeStep >= env._max_episode_steps: break
 
+    if args.drop_last_obs:
+        episodeObs = episodeObs[:-1]
+
     print("Toatal timesteps taken ", timeStep)
     print("len(episodeObs): ", len(episodeObs))
     print("len(episodeAcs): ", len(episodeAcs))
     print("len(episodeRes): ", len(episodeRes))
 
-    actions.append(episodeAcs)
-    observations.append(episodeObs)
-    infos.append(episodeInfo)
-    lens.append(env._max_episode_steps)
+    if timeStep <= env._max_episode_steps:
+        actions.append(episodeAcs)
+        observations.append(episodeObs)
+        infos.append(episodeInfo)
+        lens.append(timeStep)
     print("Update Result: len(lens) is ", len(lens))
 
 
