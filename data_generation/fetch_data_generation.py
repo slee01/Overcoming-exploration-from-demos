@@ -5,6 +5,7 @@ import numpy as np
 
 import os
 import argparse
+import torch
 
 # import rospy
 # import roslaunch
@@ -71,17 +72,20 @@ def main():
         goToGoal(env, obs)
         
 
-    fileName = "data_fetch"
+    # fileName = "data_fetch"
+    # fileName += "_" + initStateSpace
+    # fileName += "_" + str(numItr)
+    # fileName += ".npz"
+    # np.savez_compressed(fileName, acs=actions, obs=states, info=infos)
 
-    fileName += "_" + initStateSpace
+    data = {
+        'states': states,
+        'actions': actions,
+        'rewards': rewards,
+        'lengths': lens
+    }
 
-    fileName += "_" + str(numItr)
-
-    fileName += ".npz"
-    
-    np.savez_compressed(fileName, acs=actions, obs=states, info=infos)
-
-
+    torch.save(data, args.pt_file)
 
 
 def goToGoal(env, lastObs):
